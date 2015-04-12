@@ -11,3 +11,7 @@ pip install boxsdk
 ```
 pip install watchdog
 ```
+- Bottle module http://bottlepy.org/docs/dev/
+```
+pip install bottle
+```

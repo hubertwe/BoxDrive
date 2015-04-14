@@ -4,9 +4,10 @@ from __future__ import print_function, unicode_literals
 import os
 import boxsdk
 from auth import authenticate
-import time
+#import time
 
 class Box(boxsdk.Client):
+
     def __init__(self):
         self.auth = authenticate()
         self.lastEventStreamPosition = 'now'
@@ -19,6 +20,7 @@ class Box(boxsdk.Client):
 
 
 class Uploader:
+
     def __init__(self, box):
         self.box = box
 
@@ -27,7 +29,10 @@ class Uploader:
         afile = rootFolder.upload(localFileName, file_name=remoteFileName);
         print('File {0} uploaded'.format(afile.get()['name']))
 
+
+
 class Downloader:
+
     def __init__(self, box):
         self.box = box
 
@@ -49,10 +54,10 @@ class Downloader:
 
 def main():
     box = Box()
-    # while True:
-    #     for event in box.getLastEvents():
-    #         print(event)
-    #     time.sleep(5)
+    #while True:
+    #   for event in box.getLastEvents():
+    #       print(event)
+    #time.sleep(5)
 
     up = Uploader(box)
     down  = Downloader(box)

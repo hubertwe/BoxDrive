@@ -1,7 +1,7 @@
 import local
 
 if __name__ == "__main__":
-    observer = local.Observer('.')
+    observer = local.Observer('./test')
     observer.start()
     try:
         while True:

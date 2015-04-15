@@ -15,3 +15,41 @@ pip install watchdog
 ```
 pip install bottle
 ```
+
+### Todo:
+- [ ] Remote event
+- [ ] Remote updater
+- [ ] Local updater
+
+### Architecture draft ###
+
+
+```
+LOCAL:              REMOTE:
+  +----------+       +----------+
+  | Observer |       | Observer |
+  +----------+       +----------+
+       |                  |
+      \|/                \|/
+  +----------+       +----------+
+  | Handler  |       | Handler  |
+  +----------+       +----------+
+             |       |  
+              \_____/
+               /   \ 
+  +----------+/     \+----------+
+  | Updater  |       | Updater  |
+  +----------+       +----------+
+
+  - Create
+    - dir
+    - file
+  - Delete
+    - dir
+    - file
+  - Update
+    - dir
+    - file
+  
+```            
+       

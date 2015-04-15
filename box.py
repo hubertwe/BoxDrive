@@ -64,7 +64,8 @@ class Box(boxsdk.Client):
             raise ValueError('Cant find path_collection') 
         entries = pathCollection.get('entries')
         if(not entries):
-            raise ValueError('Cant find entries')
+            return filename     # specific when trashing file we don't know location
+                                # but we know filename and sha1 hash
 
         fullpath = str()
         for entry in entries:

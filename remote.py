@@ -53,8 +53,8 @@ class Event:
 
 class Handler:
 
-    def __init__(self):
-        pass
+    def __init__(self, box):
+        self.box = box
 
     def on_any_event(self, event):
         pass
@@ -68,9 +68,11 @@ class Handler:
     def on_modified(self, event):
         pass
 
-    def on_moved(self, event):
-        pass
 
+class Updater:
+
+    def __init__(self, box):
+        self.box = box
 
 
 

@@ -3,6 +3,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import boxsdk
+from boxsdk.object.file import File
 from auth import authenticate
 #import time
 
@@ -18,6 +19,16 @@ class Box(boxsdk.Client):
         self.lastEventStreamPosition = eventsPack['next_stream_position']
         return eventsPack['entries']
 
+    def getItem(self, path):
+        try:
+            return self.box.search(
+                path,
+                limit=1,
+                offset=0,
+                ancestor_folders=[self.box.folder(folder_id='0')]
+            )[0]
+        except IndexError:
+            return None
 
 class Uploader:
 

@@ -31,7 +31,6 @@ class Box(boxsdk.Client):
                         'ITEM_TRASH' : EventType.DELETE}
         return (conversion.get(boxEvent['event_type'], EventType.UNKNOWN))
 
-
     def __getSource(self,boxEvent):
         source = boxEvent.get('source')
         if(source):
@@ -77,7 +76,6 @@ class Box(boxsdk.Client):
         fullpath = fullpath + filename
         return fullpath
 
-
     def __convertEvents(self, eventList):
         convertedEvents = list()
         for event in eventList:
@@ -105,7 +103,6 @@ class Box(boxsdk.Client):
         return self.__convertEvents(newEvents)
 
 class Uploader:
-
     def __init__(self, box):
         self.box = box
 
@@ -114,10 +111,7 @@ class Uploader:
         afile = rootFolder.upload(localFileName, file_name=remoteFileName);
         print('File {0} uploaded'.format(afile.get()['name']))
 
-
-
 class Downloader:
-
     def __init__(self, box):
         self.box = box
 
@@ -126,8 +120,7 @@ class Downloader:
             remoteFileName,
             limit=1,
             offset=0,
-            ancestor_folders=[self.box.folder(folder_id='0')]
-        )
+            ancestor_folders=[self.box.folder(folder_id='0')])
 
         for item in searchResults:
             itemWithName = item.get(fields=['name'])

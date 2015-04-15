@@ -17,8 +17,8 @@ pip install bottle
 ```
 
 ### Todo:
-- [ ] Remote event (Radek)
-- [ ] Box event filter (Radek)
+- [x] Remote event (Radek)
+- [x] Box event filter (Radek)
 - [ ] Remote updater (Hubert)
 - [ ] Local updater (Hubert)
 - [ ] Fix Observer/Handler (Hubert)

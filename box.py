@@ -10,7 +10,7 @@ class EventType:
     UNKNOWN = 0
     CREATE = 1
     UPDATE = 2
-    REMOVE = 3
+    DELETE = 3
 
 class Event:
     def __init__(self):
@@ -28,7 +28,7 @@ class Box(boxsdk.Client):
     def __getEventType(self, boxEvent):
         conversion = {'ITEM_CREATE' : EventType.CREATE,
                         'ITEM_UPLOAD' : EventType.UPDATE,
-                        'ITEM_TRASH' : EventType.REMOVE}
+                        'ITEM_TRASH' : EventType.DELETE}
         return (conversion.get(boxEvent['event_type'], EventType.UNKNOWN))
 
 

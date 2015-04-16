@@ -28,6 +28,7 @@ class Observer(threading.Thread):
     def processEvent(self, event):
         pass
 
+
 class Handler:
 
     def __init__(self):
@@ -48,39 +49,26 @@ class Handler:
 
 class Updater:
 
-    def __init__(self, box):
+    def __init__(self, box, path):
+        self.path = os.path.normpath(path)
         self.box = box
 
+    def getRelativePath(self, path):
+        if self.path in path:
+            return os.path.normpath(path).split(self.path)[1][1:]
+        else:
+            return path
+
     def createFile(self, path):
-        self.box.getRoot().upload(path)
+        relativePath = self.getRelativePath(path)
+        fileName = os.path.basename(relativePath)
+        dirPath = os.path.dirname(relativePath)
+        dir = self.createDir(dirPath)
+        dir.upload(path, fileName)
 
     def createDir(self, path):
-        tail, head = os.path.split(path)
-        print 'CALL: ' + str(head) + ' | ' + str(tail)
-        if not tail:
-            print 'tail'
-            try:
-                current = box.getRoot()
-                current.create_subfolder(head)
-            except BoxAPIException:
-                pass
-            return
-        print 'CALL: ' + str(head) + ' | ' + str(tail)
-        self.createDir(tail)
-        print tail
-        current = box.getItem(tail)
-        print current
-        try:
-            current.create_subfolder(head)
-        except BoxAPIException:
-            pass
-
-'''
-        'test/box/api'
-        'test/box' , 'api'
-        'test' ,'box'
-        '', 'test'
-        folders = os.path.normpath(path).split(os.sep)
+        relativePath = self.getRelativePath(path)
+        folders = relativePath.split(os.sep)
         current = self.box.getRoot()
         for folder in folders:
             if not folder:
@@ -88,12 +76,26 @@ class Updater:
             try:
                 current = current.create_subfolder(folder)
             except BoxAPIException:
-                current = self.box.getItem()
-'''
+                current = self.box.getItem(folder, current)
+        return current
+
+    def deleteFile(self, path):
+        relativePath = self.getRelativePath(path)
+        file = self.box.getFile(relativePath)
+        if file is not None:
+            file.delete()
+
+    def deleteDir(self, path):
+        relativePath = self.getRelativePath(path)
+        dir = self.box.getDir(relativePath)
+        if dir is not None:
+            dir.delete()
+
+    def updateFile(self, path):
+        self.deleteFile(path)
+        self.createFile(path)
 
 if __name__ == '__main__':
     box = Box()
-    item = box.getItem('test/box/')
-    print item
-    #u = Updater(box)
-    #u.createDir('test/box/api')
+    u = Updater(box, 'E:/szkola/BoxDrive/')
+    u.updateFile('E:/szkola/BoxDrive/test/box/api/a.txt')

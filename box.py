@@ -5,24 +5,71 @@ import boxsdk
 from auth import authenticate
 import time
 
+
 class EventType:
     UNKNOWN = 0
     CREATE = 1
     UPDATE = 2
     DELETE = 3
 
+
 class Event:
+
     def __init__(self):
         self.type = EventType.UNKNOWN
         self.is_directory = bool()
         self.path = str()
         self.sha1 = ""
 
+
 class Box(boxsdk.Client):
+
     def __init__(self):
         self.auth = authenticate()
         self.lastEventStreamPosition = 'now'
         boxsdk.Client.__init__(self, self.auth)
+
+    def getLastEvents(self):
+        eventsPack = self.events().get_events(limit=100, stream_position=self.lastEventStreamPosition)
+        self.lastEventStreamPosition = eventsPack['next_stream_position']
+        events = eventsPack['entries']
+        newEvents =  list()
+        ids = set([event['event_id'] for event in events])
+        for event in events:
+            if event['event_id'] not in self.ids:
+                newEvents.append(event)
+        self.ids = ids
+        return self.__convertEvents(newEvents)
+
+    def getItem(self, name, parent):
+        try:
+            return self.search(
+                name,
+                limit=1,
+                offset=0,
+                ancestor_folders=[self.folder(folder_id = parent.get()['id'])]
+            )[0]
+        except IndexError:
+            return None
+
+    def getFile(self, path):
+        dir = self.getDir(os.path.dirname(path))
+        if dir is None:
+            return None
+        fileName = os.path.basename(path)
+        return self.getItem(fileName, dir)
+
+    def getDir(self, path):
+        folders = os.path.normpath(path).split(os.sep)
+        current = self.getRoot()
+        for folder in folders:
+            current = self.getItem(folder, current)
+            if current is None:
+                return None
+        return current
+
+    def getRoot(self):
+        return self.folder(folder_id = '0')
 
     def __getEventType(self, boxEvent):
         conversion = {'ITEM_CREATE' : EventType.CREATE,
@@ -90,42 +137,8 @@ class Box(boxsdk.Client):
                 print(e)
         return convertedEvents
 
-    def getLastEvents(self):
-        eventsPack = self.events().get_events(limit=100, stream_position=self.lastEventStreamPosition)
-        self.lastEventStreamPosition = eventsPack['next_stream_position']
-        events = eventsPack['entries']
-        newEvents =  list()
-        ids = set([event['event_id'] for event in events])
-        for event in events:
-            if event['event_id'] not in self.ids:
-                newEvents.append(event)
-        self.ids = ids
-        return self.__convertEvents(newEvents)
 
-    def getItem(self, path):
-        try:
-            return self.search(
-                path,
-                limit=1,
-                offset=0,
-                ancestor_folders=[self.folder(folder_id='0')]
-            )[0]
-        except IndexError:
-            return None
-
-    def getRoot(self):
-        return self.folder(folder_id = '0')
-
-class Uploader:
-    def __init__(self, box):
-        self.box = box
-
-    def upload(self, localFileName, remoteFileName):
-        rootFolder = self.box.folder(folder_id='0')
-        afile = rootFolder.upload(localFileName, file_name=remoteFileName);
-        print('File {0} uploaded'.format(afile.get()['name']))
-
-def main():
+def testBox():
     box = Box()
     while True:
        for event in box.getLastEvents():
@@ -135,18 +148,5 @@ def main():
            print("Path: " + str(event.path))
     time.sleep(5)
 
-    # up = Uploader(box)
-    # down  = Downloader(box)
-
-    # try:
-    #     up.upload('README.md', 'README.md_uploaded')
-    # except boxsdk.exception.BoxAPIException as e:
-    #     print("File You're trying to upload already exists remotely")
-    #     print(e)
-
-    # down.download('README.md_uploaded', 'README.md_downloaded')
-
-    os._exit(0)
-
-if __name__ == '__main__': 
-    main()
+if __name__ == '__main__':
+    testBox()

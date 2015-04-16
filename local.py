@@ -38,18 +38,34 @@ class Handler(FileSystemEventHandler):
     def on_created(self, event):
         super(Handler, self).on_created(event)
         print 'OnCreated ' + event.src_path
+        if event.is_directory:
+            self.updater.createDir(event.src_path)
+        else:
+            self.updater.createFile(event.src_path)
 
     def on_deleted(self, event):
         super(Handler, self).on_deleted(event)
         print 'OnDeleted ' + event.src_path
+        if event.is_directory:
+            self.updater.deleteDir(event.src_path)
+        else:
+            self.updater.deletFile(event.src_path)
 
     def on_modified(self, event):
         super(Handler, self).on_modified(event)
         print 'OnModified ' + event.src_path
+        if event.is_directory:
+            self.updater.updateFile(event.src_path)
 
     def on_moved(self, event):
         super(Handler, self).on_moved(event)
         print 'OnMoved ' + event.src_path + ' | ' + event.dest_path
+        if event.is_directory:
+            self.updater.deleteDir(event.src_path)
+            self.updater.createDir(event.dest_path)
+        else:
+            self.updater.deletFile(event.src_path)
+            self.updater.createFile(event.dest_path)
 
 
 class Updater:
@@ -58,47 +74,53 @@ class Updater:
         self.box = box
         self.path = path
 
+    def getAbsolutePath(self, path):
+        return os.path.join(self.path, path)
+
     def createFile(self, path):
-        file = self.box.getItem(path)
-        if not file:
+        absolutePath = self.getAbsolutePath(path)
+        dirPath= os.path.dirname(absolutePath)
+        file = self.box.getFile(path)
+        if file is None:
             return
-        path = os.path.join(self.path, path)
-        if not os.path.exists(os.path.dirname(path)):
-            os.makedirs(os.path.dirname(path))
-        stream = open(path, 'w+')
+        if not os.path.exists(dirPath):
+            self.createDir(dirPath)
+        stream = open(absolutePath, 'w+')
         file.download_to(stream)
 
     def createDir(self, path):
+        absolutePath = self.getAbsolutePath(path)
         try:
-            os.mkdir(path)
+            os.makedirs(absolutePath)
         except OSError: # dir already exists
             pass
 
     def deleteFile(self, path):
-        path = os.path.join(self.path, path)
-        if os.path.exists(path):
+        absolutePath = self.getAbsolutePath(path)
+        if os.path.exists(absolutePath):
             try:
-                os.remove(path)
+                os.remove(absolutePath)
             except OSError: # file is opened by other process
                 pass
 
     def deleteDir(self, path):
-        path = os.path.join(self.path, path)
-        if os.path.exists(path):
+        absolutePath = self.getAbsolutePath(path)
+        if os.path.exists(absolutePath):
             try:
-                shutil.rmtree(path)
+                shutil.rmtree(absolutePath)
             except OSError: # file is opened by other process
                 pass
 
     def updateFile(self, path):
-        file = self.box.getItem(path)
-        path = os.path.join(self.path, path)
-        if os.path.exists(path):
+        absolutePath = self.getAbsolutePath(path)
+        file = self.box.getFile(path)
+        if os.path.exists(absolutePath):
             self.deleteFile(path)
         self.createFile(path)
 
 if __name__ == '__main__':
     box = Box()
     updater = Updater('E:/szkola/BoxDrive/', box)
-    updater.createFile('test/as/b.txt')
+    updater.createFile('./test/a.gdoc')
+    updater.createFile('./test/box2/a.txt')
     #print os.path.join('E:/szkola/BoxDrive', 'E:/szkola/BoxDrive/test/as/b.txt')

@@ -1,7 +1,7 @@
 import threading
 import time
 import os
-from box import Box
+from box import Box, Event, EventType
 from boxsdk.exception import BoxAPIException
 
 
@@ -18,33 +18,45 @@ class Observer(threading.Thread):
     def run(self):
         while(not self.isStopped):
             for event in self.getEvents():
-                print event
+                self.handler.processEvent(event)
             time.sleep(self.time)
 
     def stop(self):
         self.isStopped = True
         self.join()
 
+
+class Handler():
+
+    def __init__(self, updater):
+        self.updater = updater
+
     def processEvent(self, event):
-        pass
-
-
-class Handler:
-
-    def __init__(self):
-        pass
-
-    def on_any_event(self, event):
-        pass
+        if event.type == EventType.CREATE:
+            self.on_created(event)
+        elif event.type == EventType.UPDATE:
+            self.on_modified(event)
+        elif event.type == EventType.DELETE:
+            self.on_deleted(event)
 
     def on_created(self, event):
-        pass
+        print 'OnCreated ' + event.path
+        if event.is_directory:
+            self.updater.createDir(event.path)
+        else:
+            self.updater.createFile(event.path)
 
     def on_deleted(self, event):
-        pass
+        print 'OnDeleted ' + event.path
+        if event.is_directory:
+            self.updater.deleteDir(event.path)
+        else:
+            self.updater.deletFile(event.path)
 
     def on_modified(self, event):
-        pass
+        print 'OnModified ' + event.path
+        if event.is_directory:
+            self.updater.updateFile(event.path)
 
 
 class Updater:
@@ -92,8 +104,12 @@ class Updater:
             dir.delete()
 
     def updateFile(self, path):
-        self.deleteFile(path)
-        self.createFile(path)
+        relativePath = self.getRelativePath(path)
+        file = self.box.getFile(relativePath)
+        if file is not None:
+            file.update_contents(path)
+        else:
+            self.createFile(relativePath)
 
 if __name__ == '__main__':
     box = Box()

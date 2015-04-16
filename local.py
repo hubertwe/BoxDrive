@@ -79,6 +79,8 @@ class Updater:
 
     def createFile(self, path):
         absolutePath = self.getAbsolutePath(path)
+        if os.path.exists(absolutePath):
+            return
         dirPath= os.path.dirname(absolutePath)
         file = self.box.getFile(path)
         if file is None:
@@ -114,13 +116,14 @@ class Updater:
     def updateFile(self, path):
         absolutePath = self.getAbsolutePath(path)
         file = self.box.getFile(path)
-        if os.path.exists(absolutePath):
-            self.deleteFile(path)
-        self.createFile(path)
+        if file is None:
+            return
+        stream = open(absolutePath, 'w')
+        file.download_to(stream)
 
 if __name__ == '__main__':
     box = Box()
     updater = Updater('E:/szkola/BoxDrive/', box)
     updater.createFile('./test/a.gdoc')
     updater.createFile('./test/box2/a.txt')
-    #print os.path.join('E:/szkola/BoxDrive', 'E:/szkola/BoxDrive/test/as/b.txt')
+    updater.updateFile('./test/box2/a.txt')

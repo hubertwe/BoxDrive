@@ -49,7 +49,7 @@ class Handler(FileSystemEventHandler):
         if event.is_directory:
             self.updater.deleteDir(event.src_path)
         else:
-            self.updater.deletFile(event.src_path)
+            self.updater.deleteFile(event.src_path)
 
     def on_modified(self, event):
         super(Handler, self).on_modified(event)

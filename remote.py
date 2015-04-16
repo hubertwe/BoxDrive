@@ -7,17 +7,16 @@ from boxsdk.exception import BoxAPIException
 
 class Observer(threading.Thread):
 
-    def __init__(self, box, updateTime = 6):
+    def __init__(self, box, handler, updateTime = 6):
         super(Observer, self).__init__()
         self.box = box
-        self.handler = Handler()
+        self.handler = handler
         self.isStopped = False
         self.time = updateTime
-        self.ids = set()
 
     def run(self):
         while(not self.isStopped):
-            for event in self.getEvents():
+            for event in self.box.getLastEvents():
                 self.handler.processEvent(event)
             time.sleep(self.time)
 
@@ -51,7 +50,7 @@ class Handler():
         if event.is_directory:
             self.updater.deleteDir(event.path)
         else:
-            self.updater.deletFile(event.path)
+            self.updater.deleteFile(event.path)
 
     def on_modified(self, event):
         print 'OnModified ' + event.path
@@ -61,12 +60,12 @@ class Handler():
 
 class Updater:
 
-    def __init__(self, box, path):
+    def __init__(self, path, box):
         self.path = os.path.normpath(path)
         self.box = box
 
     def getRelativePath(self, path):
-        if self.path in path:
+        if self.path in os.path.normpath(path):
             return os.path.normpath(path).split(self.path)[1][1:]
         else:
             return path
@@ -93,7 +92,9 @@ class Updater:
 
     def deleteFile(self, path):
         relativePath = self.getRelativePath(path)
+        print 'RELATIVE: ' + relativePath
         file = self.box.getFile(relativePath)
+        print file
         if file is not None:
             file.delete()
 
@@ -112,6 +113,7 @@ class Updater:
             self.createFile(relativePath)
 
 if __name__ == '__main__':
-    box = Box()
-    u = Updater(box, 'E:/szkola/BoxDrive/')
-    u.updateFile('E:/szkola/BoxDrive/test/box/api/a.txt')
+    #box = Box()
+    #u = Updater(box, 'E:/szkola/BoxDrive/')
+    #u.updateFile('E:/szkola/BoxDrive/test/box/api/a.txt')
+    print os.path.basename('sd.txt')

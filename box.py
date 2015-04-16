@@ -42,24 +42,31 @@ class Box(boxsdk.Client):
         return self.__convertEvents(newEvents)
 
     def getItem(self, name, parent):
+        print parent.get()['id']
         try:
             return self.search(
                 name,
                 limit=1,
                 offset=0,
-                ancestor_folders=[self.folder(folder_id = parent.get()['id'])]
+                ancestor_folders=[parent]
             )[0]
         except IndexError:
             return None
 
     def getFile(self, path):
+        print path
         dir = self.getDir(os.path.dirname(path))
+        print dir
         if dir is None:
             return None
         fileName = os.path.basename(path)
+        print fileName
+        print dir.get()['id']
         return self.getItem(fileName, dir)
 
     def getDir(self, path):
+        if not path:
+            return self.getRoot()
         folders = os.path.normpath(path).split(os.sep)
         current = self.getRoot()
         for folder in folders:
@@ -117,7 +124,7 @@ class Box(boxsdk.Client):
         for entry in entries:
             name = entry['name']
             if(name == 'All Files'):
-                name = '.'
+                continue
             fullpath = fullpath + name + "/"
 
         fullpath = fullpath + filename
@@ -159,4 +166,6 @@ def testBox():
     # time.sleep(5)
 
 if __name__ == '__main__':
-    testBox()
+    #testBox()
+    box = Box()
+    print box.getItem('asd.txt', box.getRoot())

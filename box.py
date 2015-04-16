@@ -1,3 +1,5 @@
+# https://developers.box.com/docs/
+
 import os
 import boxsdk
 from auth import authenticate
@@ -101,15 +103,17 @@ class Box(boxsdk.Client):
 
     def getItem(self, path):
         try:
-            return self.box.search(
+            return self.search(
                 path,
                 limit=1,
                 offset=0,
-                ancestor_folders=[self.box.folder(folder_id='0')]
+                ancestor_folders=[self.folder(folder_id='0')]
             )[0]
         except IndexError:
             return None
 
+    def getRoot(self):
+        return self.folder(folder_id = '0')
 
 class Uploader:
     def __init__(self, box):
@@ -119,26 +123,6 @@ class Uploader:
         rootFolder = self.box.folder(folder_id='0')
         afile = rootFolder.upload(localFileName, file_name=remoteFileName);
         print('File {0} uploaded'.format(afile.get()['name']))
-
-
-class Downloader:
-    def __init__(self, box):
-        self.box = box
-
-    def download(self, remoteFileName, localFileName):
-        searchResults = self.box.search(
-            remoteFileName,
-            limit=1,
-            offset=0,
-            ancestor_folders=[self.box.folder(folder_id='0')])
-
-        for item in searchResults:
-            itemWithName = item.get(fields=['name'])
-            print('Found matching file {1}-{0} to download'.format(itemWithName.name,itemWithName.id))
-            fileToDownload = self.box.file(file_id=itemWithName.id)
-            file = open(localFileName, 'w')
-            fileToDownload.download_to(file)
-            print('Download finished')
 
 def main():
     box = Box()

@@ -12,10 +12,10 @@ import shutil
 '''
 class Observer():
 
-    def __init__(self, path):
+    def __init__(self, path, handler):
         self.observer = FileSystemObserver()
         self.path = path
-        self.handler = Handler()
+        self.handler = handler
 
     def start(self):
         self.observer.schedule(self.handler, self.path, recursive=True)
@@ -28,8 +28,9 @@ class Observer():
 
 class Handler(FileSystemEventHandler):
 
-    def __init__(self):
+    def __init__(self, updater):
         super(Handler, self).__init__()
+        self.updater = updater
 
     def on_any_event(self, event):
         super(Handler, self).on_any_event(event)
@@ -53,11 +54,15 @@ class Handler(FileSystemEventHandler):
 
 class Updater:
 
-    def __init__(self, box):
+    def __init__(self, path, box):
         self.box = box
+        self.path = path
 
     def createFile(self, path):
         file = self.box.getItem(path)
+        if not file:
+            return
+        path = os.path.join(self.path, path)
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         stream = open(path, 'w+')
@@ -70,6 +75,7 @@ class Updater:
             pass
 
     def deleteFile(self, path):
+        path = os.path.join(self.path, path)
         if os.path.exists(path):
             try:
                 os.remove(path)
@@ -77,6 +83,7 @@ class Updater:
                 pass
 
     def deleteDir(self, path):
+        path = os.path.join(self.path, path)
         if os.path.exists(path):
             try:
                 shutil.rmtree(path)
@@ -85,10 +92,13 @@ class Updater:
 
     def updateFile(self, path):
         file = self.box.getItem(path)
+        path = os.path.join(self.path, path)
         if os.path.exists(path):
             self.deleteFile(path)
         self.createFile(path)
 
 if __name__ == '__main__':
-    #updater = Updater(None)
-    #updater.deleteDir('./test2')
+    box = Box()
+    updater = Updater('E:/szkola/BoxDrive/', box)
+    updater.createFile('test/as/b.txt')
+    #print os.path.join('E:/szkola/BoxDrive', 'E:/szkola/BoxDrive/test/as/b.txt')

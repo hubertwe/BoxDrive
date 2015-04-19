@@ -3,7 +3,7 @@
 import os
 import boxsdk
 from auth import authenticate
-import time
+from path import *
 
 
 class EventType:
@@ -42,7 +42,6 @@ class Box(boxsdk.Client):
         return self.__convertEvents(newEvents)
 
     def getItem(self, name, parent):
-        print parent.get()['id']
         try:
             return self.search(
                 name,
@@ -54,25 +53,34 @@ class Box(boxsdk.Client):
             return None
 
     def getFile(self, path):
-        print path
+        path = normalize(path)
+        print 'FILE PATH: ' + path
         dir = self.getDir(os.path.dirname(path))
-        print dir
+        print 'DIR OBJECT: ' + str(dir)
         if dir is None:
+            print 'FILE RETURN NONE'
             return None
         fileName = os.path.basename(path)
-        print fileName
-        print dir.get()['id']
+        print 'FILE NAME: ' + fileName
+        print 'DIR ID: ' + dir.get()['id']
         return self.getItem(fileName, dir)
 
     def getDir(self, path):
-        if not path:
-            return self.getRoot()
-        folders = os.path.normpath(path).split(os.sep)
+        path = normalize(path)
         current = self.getRoot()
+        print 'DIR PATH: ' + path
+        if not path or path == '.':
+            print 'DIR RETURN ROOT'
+            return current
+        folders = path.split('/')
         for folder in folders:
+            print 'DIR FOLDER: ' + folder
+            print 'DIR CURRENT: ' + current.get()['name']
             current = self.getItem(folder, current)
             if current is None:
+                print 'DIR RETURN NONE'
                 return None
+            print 'DIR NEXT: ' + current.get()['name']
         return current
 
     def getRoot(self):
@@ -117,6 +125,7 @@ class Box(boxsdk.Client):
             raise ValueError('Cant find path_collection') 
         entries = pathCollection.get('entries')
         if(not entries):
+            print 'Traszing: ' + filename
             return filename     # specific when trashing file we don't know location
                                 # but we know filename and sha1 hash
 

@@ -73,7 +73,7 @@ class Updater:
         print 'remote/update | Creating new file... ' + relativePath
         fileName = os.path.basename(relativePath)
         dirPath = os.path.dirname(relativePath)
-        dir = self.box.getDir(dirPath)
+        dir = self.box.getItem(dirPath)
         if dir is None:
             print 'remote/update | Parent dir doesnt exists: ' + dirPath
             dir = self.createDir(dirPath)
@@ -81,8 +81,6 @@ class Updater:
         print 'remote/update | File creation succeeded: ' + relativePath
 
     def createDir(self, path):
-        print self.path
-        print path
         relativePath = relative(self.path, path)
         print 'remote/update | Creating new directory and all parents... ' + relativePath
         folders = relativePath.split('/')
@@ -93,34 +91,24 @@ class Updater:
             try:
                 current = current.create_subfolder(folder)
             except BoxAPIException:
-                current = self.box.getItem(folder, current)
+                current = self.box.getChild(folder, current, 'folder')
         print 'remote/update | Directory creation succeeded: ' + relativePath
         return current
 
-    def deleteFile(self, path):
+    def delete(self, path):
         relativePath = relative(self.path, path)
-        print 'remote/update | Deleting file... ' + relativePath
-        file = self.box.getDir(relativePath)
-        if file is None:
+        print 'remote/update | Deleting item... ' + relativePath
+        item = self.box.getItem(relativePath)
+        if item is None:
            print 'remote/update | Path doesnt exist on Box drive: ' + relativePath
            return
-        file.delete()
-        print 'remote/update | File deletion succeeded: ' + relativePath
+        item.delete()
+        print 'remote/update | Item deletion succeeded: ' + relativePath
 
-    def deleteDir(self, path):
-        relativePath = relative(self.path, path)
-        print 'remote/update | Deleting directory... ' + relativePath
-        dir = self.box.getDir(relativePath)
-        if dir is None:
-            print 'remote/update | Path doesnt exist on Box drive: ' + relativePath
-            return
-        dir.delete()
-        print 'remote/update | Dir deletion succeeded: ' + relativePath
-
-    def updateFile(self, path):
+    def update(self, path):
         relativePath = relative(self.path, path)
         print 'remote/update | Updating file... ' + relativePath
-        file = self.box.getFile(relativePath)
+        file = self.box.getItem(relativePath)
         if file is None:
             print 'remote/update | Cant locate file on Box drive: ' + relativePath
             self.createFile(relativePath)

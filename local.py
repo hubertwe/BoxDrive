@@ -4,6 +4,7 @@ from watchdog.observers import Observer as FileSystemObserver
 from watchdog.events import FileSystemEventHandler
 from box import Box
 from path import *
+import hashlib
 
 '''
     Observes local file system changes in new thread.
@@ -47,28 +48,33 @@ class Handler(FileSystemEventHandler):
     def on_deleted(self, event):
         srcPath = normalize(event.src_path)
         print 'local/event | delete: ' + srcPath
-        if event.is_directory:
-            self.updater.deleteDir(srcPath)
-        else:
-            self.updater.deleteFile(srcPath)
+        self.updater.delete(srcPath)
 
     def on_modified(self, event):
         srcPath = normalize(event.src_path)
         if not event.is_directory:
             print 'local/event | modify: ' + srcPath
-            self.updater.updateFile(srcPath)
+            self.updater.update(srcPath)
 
     def on_moved(self, event):
         srcPath = normalize(event.src_path)
         destPath = normalize(event.dest_path)
         print 'local/event | moved: ' + srcPath + ' -> ' + destPath
+        self.updater.delete(srcPath)
         if event.is_directory:
-            self.updater.deleteDir(srcPath)
             self.updater.createDir(destPath)
         else:
-            self.updater.deletFile(srcPath)
             self.updater.createFile(destPath)
 
+def sha1(path):
+    hasher = hashlib.sha1()
+    try:
+        stream = open(path, 'rb')
+        hasher.update(stream.read())
+        stream.close()
+    except IOError:
+        return 0
+    return hasher.hexdigest()
 
 class Updater:
 
@@ -79,11 +85,11 @@ class Updater:
     def createFile(self, path):
         absolutePath = absolute(self.path, path)
         print 'local/update | Creating new file... ' + absolutePath
-        if os.exists(absolutePath):
+        if os.path.exists(absolutePath):
             print 'local/update | Nothing to create, file already exists:  ' + absolutePath
             return
         dirPath= os.path.dirname(absolutePath)
-        file = self.box.getFile(path)
+        file = self.box.getItem(path)
         if file is None:
             print 'local/update | Cant locate file on Box drive: ' + absolutePath
             return
@@ -106,7 +112,7 @@ class Updater:
     def deleteFile(self, path):
         absolutePath = absolute(self.path, path)
         print 'local/update | Deleting file... ' + absolutePath
-        if os.exists(absolutePath):
+        if os.path.exists(absolutePath):
             try:
                 os.remove(absolutePath)
                 print 'local/update | File deletion succeeded: ' + absolutePath
@@ -130,9 +136,12 @@ class Updater:
     def updateFile(self, path):
         absolutePath = absolute(self.path, path)
         print 'local/update | Updating file... ' + absolutePath
-        file = self.box.getFile(path)
+        file = self.box.getItem(path)
         if file is None:
             print 'local/update | Cant locate file on Box drive: ' + absolutePath
+            return
+        if file.sha1 == sha1(absolutePath):
+            print 'local/update | File is already up to date: ' + absolutePath
             return
         try:
             stream = open(absolutePath, 'w')

@@ -6,7 +6,10 @@ Result of each function is Linux like path.
 '''
 
 def normalize(path):
-    return os.path.normpath(path).replace('\\', '/')
+    result = os.path.normpath(path).replace('\\', '/')
+    if result == '.' or result == '/':
+        return None
+    return result
 
 
 def absolute(prefix, relativePath):
@@ -27,6 +30,7 @@ def relative(prefix, absolutePath):
         return absolutePath
 
 if __name__ == '__main__':
+    print os.path.dirname('a.txt')
     print normalize('/var/www/user/')
     print normalize('C:\\var\\www\\user\\')
     print normalize('C:/var/www/user\\')

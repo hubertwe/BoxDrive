@@ -19,9 +19,13 @@ pip install bottle
 ### Todo:
 - [x] Remote event (Radek)
 - [x] Box event filter (Radek)
-- [ ] Remote updater (Hubert)
-- [ ] Local updater (Hubert)
-- [ ] Fix Observer/Handler (Hubert)
+- [x] Remote updater (Hubert)
+- [x] Local updater (Hubert)
+- [x] Fix Observer/Handler (Hubert)
+
+### Issues:
+- [ ] Problems with synchronization when fast update/delete files and folders
+- [ ] Remote observer always raises 'Update Event' whenever file is created or updated
 
 ### Architecture draft ###
 

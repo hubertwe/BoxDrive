@@ -2,6 +2,9 @@ import local
 import remote
 from box import Box
 import time
+import argparse
+
+ROOT_FOLDER = 'Some:/path/here'
 
 def startRemote(path, box):
     updater = local.Updater(path, box)
@@ -18,7 +21,12 @@ def startLocal(path, box):
     return observer
 
 if __name__ == "__main__":
-    path = 'E:/szkola/BoxDrive/test2'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--path', nargs=1, required=True,
+                        type=str, dest='root_folder',
+                        help='Local path which should be synchronized with Box root')
+    path = parser.parse_args().root_folder[0]
+    print path
     box = Box()
     remoteObserver = startRemote(path, box)
     localObserver = startLocal(path, box)

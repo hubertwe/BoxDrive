@@ -94,7 +94,11 @@ class Updater:
         if dir is None:
             print 'remote/update | Parent dir doesnt exists: ' + dirPath
             dir = self.createDir(dirPath)
-        dir.upload(path, fileName)
+        try:
+            dir.upload(path, fileName)
+        except IOError:
+            print 'remote/update | Cant find local file: ' + relativePath
+            return
         print 'remote/update | File creation succeeded: ' + relativePath
 
     def createDir(self, path):
@@ -138,7 +142,11 @@ class Updater:
         if file.sha1 == sha1(path):
             print 'remote/update | File already up to date: ' + relativePath
             return
-        file.update_contents(path)
+        try:
+            file.update_contents(path)
+        except IOError:
+            print 'local/update | Cant find local file: ' + relativePath
+            return
         print 'local/update | File updating succeeded: ' + relativePath
 
 if __name__ == '__main__':

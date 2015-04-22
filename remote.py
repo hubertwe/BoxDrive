@@ -1,6 +1,7 @@
 import threading
 import time
 import os
+import hashlib
 from box import Box, Event, EventType
 from boxsdk.exception import BoxAPIException
 from path import *
@@ -8,7 +9,7 @@ from path import *
 
 class Observer(threading.Thread):
 
-    def __init__(self, box, handler, updateTime = 6):
+    def __init__(self, handler, box, updateTime = 6):
         super(Observer, self).__init__()
         self.box = box
         self.handler = handler
@@ -28,10 +29,13 @@ class Observer(threading.Thread):
 
 class Handler():
 
-    def __init__(self, updater):
+    def __init__(self, updater, box):
         self.updater = updater
+        self.box = box
 
     def processEvent(self, event):
+        if event.created_by == self.box.user().get()['id']:
+            return
         if event.type == EventType.CREATE:
             self.on_created(event)
         elif event.type == EventType.UPDATE:
@@ -96,6 +100,10 @@ class Updater:
     def createDir(self, path):
         relativePath = relative(self.path, path)
         print 'remote/update | Creating new directory and all parents... ' + relativePath
+        dir = self.box.getItem(relativePath)
+        if dir is not None:
+            print 'remote/update | Dir already exists on Box: ' + relativePath
+            return
         folders = relativePath.split('/')
         current = self.box.getRoot()
         for folder in folders:

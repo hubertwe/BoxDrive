@@ -20,7 +20,7 @@ class Event:
         self.is_directory = bool()
         self.path = str()
         self.sha1 = ""
-        self.author = str()
+        self.created_by = str()
 
 
 class Box(boxsdk.Client):
@@ -109,6 +109,7 @@ class Box(boxsdk.Client):
                 newEvent.path = self.__getFullPathFromEvent(event)
                 newEvent.is_directory = bool(event['source']['type'] == 'folder')
                 newEvent.sha1 = event['source'].get('sha1', 0)
+                newEvent.created_by = event['created_by']['id']
                 convertedEvents.append(newEvent)
             except (TypeError, KeyError):
                 continue

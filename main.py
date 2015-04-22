@@ -5,8 +5,8 @@ import time
 
 def startRemote(path, box):
     updater = local.Updater(path, box)
-    handler = remote.Handler(updater)
-    observer = remote.Observer(box, handler)
+    handler = remote.Handler(updater, box)
+    observer = remote.Observer(handler, box)
     observer.start()
     return observer
 
@@ -18,7 +18,7 @@ def startLocal(path, box):
     return observer
 
 if __name__ == "__main__":
-    path = 'E:/pwr/BoxDrive/test'
+    path = 'E:/szkola/BoxDrive/test2'
     box = Box()
     remoteObserver = startRemote(path, box)
     localObserver = startLocal(path, box)

@@ -20,6 +20,7 @@ class Event:
         self.is_directory = bool()
         self.path = str()
         self.sha1 = ""
+        self.author = str()
 
 
 class Box(boxsdk.Client):
@@ -65,7 +66,7 @@ class Box(boxsdk.Client):
             return result
 
     def getRoot(self):
-        return self.folder(folder_id = '0')
+        return self.folder(folder_id = '0').get()
 
     def getChild(self, name, parent, type = 'file'):
         if not parent or not name:
@@ -86,9 +87,10 @@ class Box(boxsdk.Client):
         source = boxEvent['source']
         entries = source['path_collection']['entries']
         if not entries or entries[0]['name'] == 'Trash':
-            parent = self.folder(folder_id = source['parent']['id'])
+            parent = self.folder(folder_id = source['parent']['id']).get()
             try:
                 entries = parent.path_collection['entries']
+                entries.append({'name' : parent.name})
             except KeyError:
                 entries = list()
         fullpath = str()
@@ -101,12 +103,15 @@ class Box(boxsdk.Client):
     def __convertEvents(self, eventList):
         convertedEvents = list()
         for event in eventList:
-            newEvent = Event()
-            newEvent.type = self.__getType(event)
-            newEvent.path = self.__getFullPathFromEvent(event)
-            newEvent.is_directory = bool(event['source']['type'] == 'folder')
-            newEvent.sha1 = event['source'].get('sha1', 0)
-            convertedEvents.append(newEvent)
+            try:
+                newEvent = Event()
+                newEvent.type = self.__getType(event)
+                newEvent.path = self.__getFullPathFromEvent(event)
+                newEvent.is_directory = bool(event['source']['type'] == 'folder')
+                newEvent.sha1 = event['source'].get('sha1', 0)
+                convertedEvents.append(newEvent)
+            except (TypeError, KeyError):
+                continue
         return convertedEvents
 
 
@@ -135,8 +140,9 @@ if __name__ == '__main__':
     #testBox()
     box = Box()
     root = box.getRoot()
-    file = box.getItem('a')
-    print file
-    print file.name
-    print root
-    print root.name
+    file = box.getItem('box')
+    new = box.folder(folder_id = file.id).get()
+    'NEW'
+    print new.name
+    print new.id
+    print new.path_collection

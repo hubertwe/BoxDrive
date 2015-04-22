@@ -61,6 +61,15 @@ class Handler():
             print 'remote/event | modify: ' + srcPath
             self.updater.updateFile(srcPath)
 
+def sha1(path):
+    hasher = hashlib.sha1()
+    try:
+        stream = open(path, 'rb')
+        hasher.update(stream.read())
+        stream.close()
+    except IOError:
+        return 0
+    return hasher.hexdigest()
 
 class Updater:
 
@@ -71,6 +80,10 @@ class Updater:
     def createFile(self, path):
         relativePath = relative(self.path, path)
         print 'remote/update | Creating new file... ' + relativePath
+        file = self.box.getItem(relativePath)
+        if file is not None:
+            print 'remote/update | File already exists on Box: ' + relativePath
+            return
         fileName = os.path.basename(relativePath)
         dirPath = os.path.dirname(relativePath)
         dir = self.box.getItem(dirPath)
@@ -88,10 +101,11 @@ class Updater:
         for folder in folders:
             if not folder:
                 continue
-            try:
+            next = self.box.getChild(folder, current, 'folder')
+            if next is None:
                 current = current.create_subfolder(folder)
-            except BoxAPIException:
-                current = self.box.getChild(folder, current, 'folder')
+            else:
+                current = next
         print 'remote/update | Directory creation succeeded: ' + relativePath
         return current
 
@@ -112,9 +126,12 @@ class Updater:
         if file is None:
             print 'remote/update | Cant locate file on Box drive: ' + relativePath
             self.createFile(relativePath)
-        else:
-            file.update_contents(path)
-            print 'local/update | File updating succeeded: ' + relativePath
+            return
+        if file.sha1 == sha1(path):
+            print 'remote/update | File already up to date: ' + relativePath
+            return
+        file.update_contents(path)
+        print 'local/update | File updating succeeded: ' + relativePath
 
 if __name__ == '__main__':
     box = Box()

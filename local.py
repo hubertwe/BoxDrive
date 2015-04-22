@@ -135,13 +135,16 @@ class Updater:
 
     def updateFile(self, path):
         absolutePath = absolute(self.path, path)
+        if not os.path.exists(absolutePath):
+            self.createFile(path)
+            return
         print 'local/update | Updating file... ' + absolutePath
         file = self.box.getItem(path)
         if file is None:
             print 'local/update | Cant locate file on Box drive: ' + absolutePath
             return
         if file.sha1 == sha1(absolutePath):
-            print 'local/update | File is already up to date: ' + absolutePath
+            print 'local/update | File already up to date: ' + absolutePath
             return
         try:
             stream = open(absolutePath, 'w')

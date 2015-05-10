@@ -4,23 +4,7 @@ import os
 import boxsdk
 from auth import authenticate
 from path import *
-
-
-class EventType:
-    UNKNOWN = 0
-    CREATE = 1
-    UPDATE = 2
-    DELETE = 3
-
-
-class Event:
-
-    def __init__(self):
-        self.type = EventType.UNKNOWN
-        self.is_directory = bool()
-        self.path = str()
-        self.sha1 = ""
-        self.created_by = str()
+from event import EventType, Event
 
 
 class Box(boxsdk.Client):
@@ -104,12 +88,13 @@ class Box(boxsdk.Client):
         convertedEvents = list()
         for event in eventList:
             try:
-                newEvent = Event()
-                newEvent.type = self.__getType(event)
-                newEvent.path = self.__getFullPathFromEvent(event)
-                newEvent.is_directory = bool(event['source']['type'] == 'folder')
-                newEvent.sha1 = event['source'].get('sha1', 0)
-                newEvent.created_by = event['created_by']['id']
+                newEvent = Event(
+                    type=self.__getType(event),
+                    path=self.__getFullPathFromEvent(event),
+                    is_directory=bool(event['source']['type'] == 'folder'),
+                    sha1=event['source'].get('sha1', 0),
+                    created_by=event['created_by']['id']
+                )
                 convertedEvents.append(newEvent)
             except (TypeError, KeyError):
                 continue

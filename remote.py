@@ -2,9 +2,10 @@ import threading
 import time
 import os
 import hashlib
-from box import Box, Event, EventType
+from box import Box
 from boxsdk.exception import BoxAPIException
 from path import *
+from event import EventType, Event, EventList
 
 
 class Observer(threading.Thread):
@@ -17,9 +18,9 @@ class Observer(threading.Thread):
         self.time = updateTime
 
     def run(self):
-        while(not self.isStopped):
+        while not self.isStopped:
             for event in self.box.getLastEvents():
-                self.handler.processEvent(event)
+                self.handler.dispatch(event)
             time.sleep(self.time)
 
     def stop(self):
@@ -29,13 +30,15 @@ class Observer(threading.Thread):
 
 class Handler():
 
-    def __init__(self, updater, box):
+    def __init__(self, updater, box, eventList):
         self.updater = updater
         self.box = box
+        self.events = eventList
 
-    def processEvent(self, event):
-        if event.created_by == self.box.user().get()['id']:
+    def dispatch(self, event):
+        if not self.__isUpdateNeeded(event):
             return
+        self.events.append(event)
         if event.type == EventType.CREATE:
             self.on_created(event)
         elif event.type == EventType.UPDATE:
@@ -44,26 +47,29 @@ class Handler():
             self.on_deleted(event)
 
     def on_created(self, event):
-        srcPath = normalize(event.path)
-        print 'remote/event | create: ' + srcPath
+        print 'remote/event | create: ' + event.path
         if event.is_directory:
-            self.updater.createDir(srcPath)
+            self.updater.createDir(event.path)
         else:
-            self.updater.createFile(srcPath)
+            self.updater.createFile(event.path)
 
     def on_deleted(self, event):
-        srcPath = normalize(event.path)
-        print 'remote/event | delete: ' + srcPath
+        print 'remote/event | delete: ' + event.path
         if event.is_directory:
-            self.updater.deleteDir(srcPath)
+            self.updater.deleteDir(event.path)
         else:
-            self.updater.deleteFile(srcPath)
+            self.updater.deleteFile(event.path)
 
     def on_modified(self, event):
-        srcPath = normalize(event.path)
         if not event.is_directory:
-            print 'remote/event | modify: ' + srcPath
-            self.updater.updateFile(srcPath)
+            print 'remote/event | modify: ' + event.path
+            self.updater.updateFile(event.path)
+
+    def __isUpdateNeeded(self, event):
+        if event.created_by == self.box.user().get()['id']:
+            return False
+        return True
+
 
 def sha1(path):
     hasher = hashlib.sha1()

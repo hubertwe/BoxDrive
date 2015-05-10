@@ -1,10 +1,10 @@
-import os
 import shutil
 from watchdog.observers import Observer as FileSystemObserver
 from watchdog.events import FileSystemEventHandler
 from box import Box
 from path import *
-import hashlib
+from event import Event, EventType
+from helper import sha1
 
 '''
     Observes local file system changes in new thread.
@@ -30,51 +30,58 @@ class Observer():
 
 class Handler(FileSystemEventHandler):
 
-    def __init__(self, updater):
+    def __init__(self, updater, eventList):
         super(Handler, self).__init__()
         self.updater = updater
+        self.events = eventList
 
-    def on_any_event(self, event):
-        pass
+    def dispatch(self, event):
+        event = Event.fromLocalEvent(event)
+        if not self.__isUpdateNeeded(event):
+            return
+        if event.type == EventType.CREATE:
+            self.on_created(event)
+        elif event.type == EventType.UPDATE:
+            self.on_modified(event)
+        elif event.type == EventType.DELETE:
+            self.on_deleted(event)
+        elif event.type == EventType.MOVED:
+            self.on_moved(event)
 
     def on_created(self, event):
-        srcPath = normalize(event.src_path)
-        print 'local/event | create: ' + srcPath
+        print 'local/event | create: ' + event.path
         if event.is_directory:
-            self.updater.createDir(srcPath)
+            self.updater.createDir(event.path)
         else:
-            self.updater.createFile(srcPath)
+            self.updater.createFile(event.path)
 
     def on_deleted(self, event):
-        srcPath = normalize(event.src_path)
-        print 'local/event | delete: ' + srcPath
-        self.updater.delete(srcPath)
+        print 'local/event | delete: ' + event.path
+        self.updater.delete(event.path)
 
     def on_modified(self, event):
-        srcPath = normalize(event.src_path)
-        if not event.is_directory:
-            print 'local/event | modify: ' + srcPath
-            self.updater.update(srcPath)
+        if event.is_directory:
+            return
+        print 'local/event | modify: ' + event.path
+        self.updater.update(event.path)
 
     def on_moved(self, event):
-        srcPath = normalize(event.src_path)
-        destPath = normalize(event.dest_path)
-        print 'local/event | moved: ' + srcPath + ' -> ' + destPath
-        self.updater.delete(srcPath)
+        print 'local/event | moved: ' + event.path + ' -> ' + event.dest_path
+        self.updater.delete(event.path)
         if event.is_directory:
-            self.updater.createDir(destPath)
+            self.updater.createDir(event.dest_path)
         else:
-            self.updater.createFile(destPath)
+            self.updater.createFile(event.dest_path)
 
-def sha1(path):
-    hasher = hashlib.sha1()
-    try:
-        stream = open(path, 'rb')
-        hasher.update(stream.read())
-        stream.close()
-    except IOError:
-        return 0
-    return hasher.hexdigest()
+    def __isUpdateNeeded(self, event):
+        if event.is_directory and event.type == EventType.UPDATE:
+            return False
+        eventFromList = self.events.get(event)
+        if eventFromList:
+            self.events.remove(eventFromList)
+            return False
+        return True
+
 
 class Updater:
 

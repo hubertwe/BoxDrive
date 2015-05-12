@@ -76,6 +76,10 @@ class Handler(FileSystemEventHandler):
     def __isUpdateNeeded(self, event):
         if event.is_directory and event.type == EventType.UPDATE:
             return False
+        if not os.path.exists(os.path.dirname(event.path)):
+            return False
+        print event
+        print self.events
         eventFromList = self.events.get(event)
         if eventFromList:
             self.events.remove(eventFromList)

@@ -6,6 +6,7 @@ from box import Box
 from boxsdk.exception import BoxAPIException
 from path import *
 from event import EventType, Event, EventList
+import copy
 
 
 class Observer(threading.Thread):
@@ -38,7 +39,11 @@ class Handler():
     def dispatch(self, event):
         if not self.__isUpdateNeeded(event):
             return
-        self.events.append(event)
+        # TODO: Some ugly hack, please fix me
+        eventToAppend = copy.deepcopy(event)
+        eventToAppend.path = absolute(self.updater.path, eventToAppend.path)
+        self.events.append(eventToAppend)
+        # ------
         if event.type == EventType.CREATE:
             self.on_created(event)
         elif event.type == EventType.UPDATE:
@@ -150,10 +155,12 @@ class Updater:
             return
         try:
             file.update_contents(path)
-        except IOError:
-            print 'local/update | Cant find local file: ' + relativePath
+        except IOError as e:
+            print e.errno
+            print e
+            print 'remote/update | Cant find local file or is blocked: ' + relativePath
             return
-        print 'local/update | File updating succeeded: ' + relativePath
+        print 'remote/update | File updating succeeded: ' + relativePath
 
 if __name__ == '__main__':
     box = Box()

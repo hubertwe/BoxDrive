@@ -7,6 +7,12 @@ from boxsdk.exception import BoxAPIException
 from path import *
 from event import EventType, Event, EventList
 
+from Crypto.Cipher import AES
+import io
+import struct
+
+SOME_KEY = "0123456789ABCDEF"
+SOME_IV  = "0123456789ABCDEF"
 
 class Observer(threading.Thread):
 
@@ -81,6 +87,20 @@ def sha1(path):
         return 0
     return hasher.hexdigest()
 
+def encrypt_file(filename, outbuffer, chunksize=64*1024):
+    encryptor = AES.new(SOME_KEY, AES.MODE_CBC, SOME_IV)
+    filesize = os.path.getsize(filename)
+    outbuffer.write(struct.pack('<Q', filesize))
+    with open(filename, 'rb') as infile:
+        while True:
+            chunk = infile.read(chunksize)
+            if len(chunk) == 0:
+                break
+            elif len(chunk) % 16 != 0:
+                chunk += ' ' * (16 - len(chunk) % 16)
+
+            outbuffer.write(encryptor.encrypt(chunk))
+
 class Updater:
 
     def __init__(self, path, box):
@@ -101,7 +121,12 @@ class Updater:
             print 'remote/update | Parent dir doesnt exists: ' + dirPath
             dir = self.createDir(dirPath)
         try:
-            dir.upload(path, fileName)
+            #dir.upload(path, fileName)
+            output = io.BytesIO()
+            encrypt_file(path, output)
+            output.seek(0)
+            dir.upload_stream(output, fileName)
+
         except IOError:
             print 'remote/update | Cant find local file: ' + relativePath
             return
@@ -156,6 +181,7 @@ class Updater:
         print 'local/update | File updating succeeded: ' + relativePath
 
 if __name__ == '__main__':
+    pass
     box = Box()
     u = Updater(box, 'E:/szkola/BoxDrive/')
     u.updateFile('E:/szkola/BoxDrive/test/box/api/a.txt')

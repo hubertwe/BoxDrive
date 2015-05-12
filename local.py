@@ -6,6 +6,13 @@ from path import *
 from event import Event, EventType
 from helper import sha1
 
+from Crypto.Cipher import AES
+import io
+import struct
+
+SOME_KEY = "0123456789ABCDEF"
+SOME_IV  = "0123456789ABCDEF"
+
 '''
     Observes local file system changes in new thread.
     (see watchdog.observers.Observer for more details)
@@ -82,6 +89,16 @@ class Handler(FileSystemEventHandler):
             return False
         return True
 
+def decrypt_file(inBuffer, filename, chunksize=64*1024):
+    decryptor = AES.new(SOME_KEY, AES.MODE_CBC, SOME_IV)
+    origsize = struct.unpack('<Q', inBuffer.read(struct.calcsize('Q')))[0]
+    with open(filename, 'wb') as outfile:
+        while True:
+            chunk = inBuffer.read(chunksize)
+            if len(chunk) == 0:
+                break
+            outfile.write(decryptor.decrypt(chunk))
+        outfile.truncate(origsize)
 
 class Updater:
 
@@ -103,8 +120,11 @@ class Updater:
         if not os.path.exists(dirPath):
             print 'local/update | Parent dir doesnt exists: ' + dirPath
             self.createDir(dirPath)
-        stream = open(absolutePath, 'w+')
-        file.download_to(stream)
+        #stream = open(absolutePath, 'w+')
+        output = io.BytesIO()
+        file.download_to(output)
+        output.seek(0)
+        decrypt_file(output, absolutePath)
         print 'local/update | File creation succeeded: ' + absolutePath
 
     def createDir(self, path):

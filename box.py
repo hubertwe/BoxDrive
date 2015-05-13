@@ -77,9 +77,10 @@ class Box(boxsdk.Client):
                 entries.append({'name' : parent.name})
             except KeyError:
                 entries = list()
+
         fullpath = str()
         for entry in entries:
-            if(entry['name'] == 'All Files'):
+            if entry['name'] == 'All Files':
                 continue
             fullpath = fullpath + entry['name'] + "/"
         return fullpath + source['name']
@@ -88,6 +89,9 @@ class Box(boxsdk.Client):
         convertedEvents = list()
         for event in eventList:
             try:
+                if event['source']['parent'] is None:
+                    # This is reported for files inside deleting folder
+                    continue
                 newEvent = Event(
                     type=self.__getType(event),
                     path=self.__getFullPathFromEvent(event),

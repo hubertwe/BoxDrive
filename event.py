@@ -4,11 +4,11 @@ from helper import sha1
 
 
 class EventType:
-    UNKNOWN = 0
-    CREATE = 1
-    UPDATE = 2
-    DELETE = 3
-    MOVED = 4
+    UNKNOWN = 'unknown'
+    CREATE = 'create'
+    UPDATE = 'update'
+    DELETE = 'delete'
+    MOVED = 'moved'
 
     @classmethod
     def fromLocalType(cls, localType):
@@ -34,9 +34,10 @@ class Event:
         self.created_by = created_by
 
     def __eq__(self, other):
-        return bool(
-            (self.path in other.path or other.path in self.path) and self.type == other.type
-        )
+        return bool(self.path == other.path and self.type == other.type)
+
+    def __repr__(self):
+        return str({'type': self.type, 'path': self.path})
 
     @classmethod
     def fromLocalEvent(cls, localEvent):
@@ -60,6 +61,9 @@ class EventList:
         self.events = list()
         self.lock = threading.Lock()
 
+    def __repr__(self):
+        return str(self.events)
+
     def append(self, event):
         self.lock.acquire()
         self.events.append(event)
@@ -76,7 +80,8 @@ class EventList:
 
     def remove(self, event):
         self.lock.acquire()
-        self.events.remove(event)
+        index = self.events.index(event)
+        self.events = self.events[index + 1:]
         self.lock.release()
 
 

@@ -4,14 +4,8 @@ from watchdog.events import FileSystemEventHandler
 from box import Box
 from path import *
 from event import Event, EventType
-from helper import sha1
-
-from Crypto.Cipher import AES
+from helper import sha1, decrypt, encrypt
 import io
-import struct
-
-SOME_KEY = "0123456789ABCDEF"
-SOME_IV  = "0123456789ABCDEF"
 
 '''
     Observes local file system changes in new thread.
@@ -93,16 +87,6 @@ class Handler(FileSystemEventHandler):
             return False
         return True
 
-def decrypt_file(inBuffer, filename, chunksize=64*1024):
-    decryptor = AES.new(SOME_KEY, AES.MODE_CBC, SOME_IV)
-    origsize = struct.unpack('<Q', inBuffer.read(struct.calcsize('Q')))[0]
-    with open(filename, 'wb') as outfile:
-        while True:
-            chunk = inBuffer.read(chunksize)
-            if len(chunk) == 0:
-                break
-            outfile.write(decryptor.decrypt(chunk))
-        outfile.truncate(origsize)
 
 class Updater:
 
@@ -124,11 +108,9 @@ class Updater:
         if not os.path.exists(dirPath):
             print 'local/update | Parent dir doesnt exists: ' + dirPath
             self.createDir(dirPath)
-        #stream = open(absolutePath, 'w+')
         output = io.BytesIO()
         file.download_to(output)
-        output.seek(0)
-        decrypt_file(output, absolutePath)
+        decrypt(output, absolutePath)
         print 'local/update | File creation succeeded: ' + absolutePath
 
     def createDir(self, path):
@@ -174,14 +156,19 @@ class Updater:
         if file is None:
             print 'local/update | Cant locate file on Box drive: ' + absolutePath
             return
-        if file.sha1 == sha1(absolutePath):
-            print 'local/update | File already up to date: ' + absolutePath
-            return
         try:
-            stream = open(absolutePath, 'w')
-            file.download_to(stream)
+            output = io.BytesIO()
+            encrypt(absolutePath, output)
+            if file.sha1 == sha1(output):
+                print 'local/update | File already up to date: ' + absolutePath
+                return
+            output = io.BytesIO()
+            file.download_to(output)
+            decrypt(output, absolutePath)
             print 'local/update | File updating succeeded: ' + absolutePath
-        except IOError:
+        except (IOError, OSError) as e:
+            print e.errno
+            print e
             print 'local/update | Can\'t open local file: ' + absolutePath
 
 

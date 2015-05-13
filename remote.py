@@ -6,14 +6,9 @@ from box import Box
 from boxsdk.exception import BoxAPIException
 from path import *
 from event import EventType, Event, EventList
+from helper import sha1, encrypt
 import copy
-
-from Crypto.Cipher import AES
 import io
-import struct
-
-SOME_KEY = "0123456789ABCDEF"
-SOME_IV  = "0123456789ABCDEF"
 
 class Observer(threading.Thread):
 
@@ -82,30 +77,6 @@ class Handler():
         return True
 
 
-def sha1(path):
-    hasher = hashlib.sha1()
-    try:
-        stream = open(path, 'rb')
-        hasher.update(stream.read())
-        stream.close()
-    except IOError:
-        return 0
-    return hasher.hexdigest()
-
-def encrypt_file(filename, outbuffer, chunksize=64*1024):
-    encryptor = AES.new(SOME_KEY, AES.MODE_CBC, SOME_IV)
-    filesize = os.path.getsize(filename)
-    outbuffer.write(struct.pack('<Q', filesize))
-    with open(filename, 'rb') as infile:
-        while True:
-            chunk = infile.read(chunksize)
-            if len(chunk) == 0:
-                break
-            elif len(chunk) % 16 != 0:
-                chunk += ' ' * (16 - len(chunk) % 16)
-
-            outbuffer.write(encryptor.encrypt(chunk))
-
 class Updater:
 
     def __init__(self, path, box):
@@ -126,13 +97,10 @@ class Updater:
             print 'remote/update | Parent dir doesnt exists: ' + dirPath
             dir = self.createDir(dirPath)
         try:
-            #dir.upload(path, fileName)
             output = io.BytesIO()
-            encrypt_file(path, output)
-            output.seek(0)
+            encrypt(path, output)
             dir.upload_stream(output, fileName)
-
-        except IOError:
+        except (IOError,OSError):
             print 'remote/update | Cant find local file: ' + relativePath
             return
         print 'remote/update | File creation succeeded: ' + relativePath
@@ -175,14 +143,14 @@ class Updater:
             print 'remote/update | Cant locate file on Box drive: ' + relativePath
             self.createFile(relativePath)
             return
-        if file.sha1 == sha1(path):
-            print 'remote/update | File already up to date: ' + relativePath
-            return
         try:
-            file.update_contents(path)
-        except IOError as e:
-            print e.errno
-            print e
+            output = io.BytesIO()
+            encrypt(path, output)
+            if file.sha1 == sha1(output):
+                print 'remote/update | File already up to date: ' + relativePath
+                return
+            file.update_contents_with_stream(output)
+        except (IOError, OSError):
             print 'remote/update | Cant find local file or is blocked: ' + relativePath
             return
         print 'remote/update | File updating succeeded: ' + relativePath

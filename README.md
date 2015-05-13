@@ -15,6 +15,10 @@ pip install watchdog
 ```
 pip install bottle
 ```
+- PyCrypto module https://www.dlitz.net/software/pycrypto/ - encryption and decryption files
+```
+pip install pycrypto
+```
 
 ### Todo:
 - [x] Remote event (Radek)

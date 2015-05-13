@@ -1,6 +1,6 @@
 import threading
 from path import normalize
-from helper import sha1
+from helper import sha1, encrypt
 
 
 class EventType:
@@ -51,7 +51,7 @@ class Event:
             dest_path=destPath,
             type=EventType.fromLocalType(localEvent.event_type),
             is_directory=localEvent.is_directory,
-            sha1=sha1(srcPath)
+            sha1=0
         )
 
 

@@ -68,7 +68,7 @@ class TaskBarIcon(wx.TaskBarIcon):
         if not self.check_config():
             self.on_settings(None)
         else:
-            self.box = Box()
+            self.box = Box(self.config)
             self.start_app()
 
     def check_config(self):
@@ -76,7 +76,7 @@ class TaskBarIcon(wx.TaskBarIcon):
 
     def start_app(self):
         if self.box is None:
-            self.box = Box()
+            self.box = Box(self.config)
         self.eventList = EventList()
         self.remoteObserver = startRemote(self.config['path'], self.box, self.eventList)
         self.localObserver = startLocal(self.config['path'], self.box, self.eventList)
@@ -121,6 +121,7 @@ class TaskBarIcon(wx.TaskBarIcon):
         "Do you really want to close this application?",
         "Confirm Exit", wx.OK|wx.CANCEL|wx.ICON_QUESTION)
         if dlg == wx.OK:
+            saveConfig(self.configPath, self.config)
             self.stop_app()
             self.Destroy()
 

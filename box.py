@@ -2,17 +2,25 @@
 
 import os
 import boxsdk
-from auth import authenticate
+from authSimple import O2AuthSimple
+from authComplex import O2AuthComplex
 from path import *
 from event import EventType, Event
-
+from boxsdk.exception import BoxOAuthException
 
 class Box(boxsdk.Client):
 
-    def __init__(self):
-        self.auth = authenticate()
+    def __init__(self, config):
+        #self.O2A = O2AuthSimple(config)
+        self.auth = O2AuthSimple(config).authenticate()
         self.lastEventStreamPosition = 'now'
         boxsdk.Client.__init__(self, self.auth)
+        try:
+            self.getRoot()
+        except BoxOAuthException:
+            print("Got oAuthException. Tokens expired. Complex authentication will be done!")
+            self.auth = O2AuthComplex(config).authenticate()
+            boxsdk.Client.__init__(self, self.auth)
 
     def getLastEvents(self):
         eventsPack = self.events().get_events(limit=100, stream_position=self.lastEventStreamPosition)

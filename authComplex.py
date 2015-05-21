@@ -8,7 +8,6 @@ from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
 
 from boxsdk import OAuth2
 
-
 CLIENT_ID = 'l2xl33zviyg2b75tponbcjztason1ppi'  # Insert Box client ID here
 CLIENT_SECRET = 'ijzDjgoiMXodVilh6K1CdtRRxbgFfJo6'  # Insert Box client secret here
 

@@ -151,8 +151,7 @@ class Settings(wx.Frame):
         font = wx.Font(18, wx.SWISS, wx.NORMAL, wx.NORMAL)
         settingsText.SetFont(font)
 
-        availableEncryptions = ['AES', 'ARC2', 'Blowfish', 'CAST', 'DES', 'DES3 (Triple DES)','IDEA', 'RC5']
-
+        availableEncryptions = ['AES']
 
         algorithmCBLabel = wx.StaticText(panel, -1, "Algorithm:")
         self.algorithmCB = wx.ComboBox(panel, -1, availableEncryptions[0], (0, 0),

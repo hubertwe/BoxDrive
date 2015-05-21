@@ -63,17 +63,20 @@ class TaskBarIcon(wx.TaskBarIcon):
         self.set_icon('img/icon_inactive.png')
         self.configPath = 'config.cfg'
         self.config = loadConfig(self.configPath)
-        self.box = Box()
+        self.box = None
         self.isAppRunning = False
         if not self.check_config():
             self.on_settings(None)
         else:
+            self.box = Box()
             self.start_app()
 
     def check_config(self):
         return bool(os.path.exists(self.config['path']))
 
     def start_app(self):
+        if self.box is None:
+            self.box = Box()
         self.eventList = EventList()
         self.remoteObserver = startRemote(self.config['path'], self.box, self.eventList)
         self.localObserver = startLocal(self.config['path'], self.box, self.eventList)

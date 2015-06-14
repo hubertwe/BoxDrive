@@ -6,6 +6,7 @@ from event import EventList
 from box import Box
 import local
 import remote
+from indexer import Indexer
 
 typeEVT_SETTINGS = wx.NewEventType()
 EVT_SETTINGS = wx.PyEventBinder(typeEVT_SETTINGS, 1)
@@ -69,6 +70,8 @@ class TaskBarIcon(wx.TaskBarIcon):
             self.on_settings(None)
         else:
             self.box = Box(self.config)
+            indexer = Indexer(self.config['path'], self.box)
+            indexer.synchronize()
             self.start_app()
 
     def check_config(self):

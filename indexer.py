@@ -2,33 +2,55 @@ import os
 import boxsdk
 from box import Box
 import hashlib
-from glob import glob
+from local import Updater
+from path import normalize
+import shutil
 
 class FileIndex():
-    def __init__(self, filename, path, sha1):
+
+    def __init__(self, filename, path, sha1, isDir=False):
         self.filename = filename
         self.path = path
         self.sha1 = sha1
-    def getName(self):
-        return self.filename
+        self.isDir = isDir
 
-    def getPath(self):
-        return self.path
-
-    def getSha(self):
-        return self.sha1
 
 class Indexer:
     
-    def __init__(self):
+    def __init__(self, path, box):
+        self.box = box
+        self.path = normalize(path)
+        self.updater = Updater(path, box)
         self.remoteFiles = list()
         self.localFiles = list()
+
+    def synchronize(self):
+        self.__clearDir(self.path)
+        self.remote(self.box)
+        for file in self.remoteFiles:
+            path = os.path.join(file.path, file.filename)
+            print 'INDEXER: ' + path
+            if file.isDir:
+                self.updater.createDir(path)
+            else:
+                self.updater.updateFile(path)
 
     def getRemoteIndex(self):
         return self.remoteFiles
 
     def getLocalIndex(self):
         return self.localFiles
+
+    def __clearDir(self, path):
+        for item in os.listdir(path):
+            currentPath = os.path.join(path, item)
+            try:
+                if os.path.isdir(currentPath):
+                    shutil.rmtree(currentPath)
+                else:
+                    os.remove(currentPath)
+            except OSError:
+                pass
 
     def __sha(self, path):
         hasher = hashlib.sha1()
@@ -50,17 +72,18 @@ class Indexer:
 
     def __processDirectory(self, directoryObject):
         items = directoryObject.get_items(limit=10000)
-        currentPath = "";
         for item in items:
+            currentPath = '';
+            fileInfo = item.get()
+            for element in fileInfo['path_collection']['entries']:
+                if element['id'] == '0':
+                    continue
+                currentPath += element['name'] + '/'
             if type(item) is boxsdk.object.folder.Folder:
+                self.remoteFiles.append(FileIndex(fileInfo['name'], currentPath, '', True))
                 self.__processDirectory(item)
             else:
-                fileInfo = item.get()  
-                for element in fileInfo['path_collection']['entries']:
-                    if element['id'] == '0':
-                        element['name'] = '.'
-                    currentPath += element['name'] + '/'
-                self.remoteFiles.append(FileIndex(fileInfo['name'],currentPath,fileInfo['sha1']))
+                self.remoteFiles.append(FileIndex(fileInfo['name'], currentPath, fileInfo['sha1']))
 
     def remote(self, box):
         print("Remote indexing started...")
@@ -69,7 +92,4 @@ class Indexer:
         print("Remote indexing finished.")
 
 if __name__ == '__main__':
-    index = Indexer();
-    index.local('.');
-    box = Box();
-    index.remote(box);
+    path = ('E:\pwr\BoxDrive\\test')

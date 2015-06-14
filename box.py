@@ -6,7 +6,7 @@ from authSimple import O2AuthSimple
 from authComplex import O2AuthComplex
 from path import *
 from event import EventType, Event
-from boxsdk.exception import BoxOAuthException
+from boxsdk.exception import BoxException
 
 class Box(boxsdk.Client):
 
@@ -17,7 +17,7 @@ class Box(boxsdk.Client):
         boxsdk.Client.__init__(self, self.auth)
         try:
             self.getRoot()
-        except BoxOAuthException:
+        except BoxException:
             print("Got oAuthException. Tokens expired. Complex authentication will be done!")
             self.auth = O2AuthComplex(config).authenticate()
             boxsdk.Client.__init__(self, self.auth)

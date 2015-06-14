@@ -7,6 +7,7 @@ from box import Box
 import local
 import remote
 from indexer import Indexer
+from helper import RSA
 
 typeEVT_SETTINGS = wx.NewEventType()
 EVT_SETTINGS = wx.PyEventBinder(typeEVT_SETTINGS, 1)
@@ -24,9 +25,12 @@ def create_menu_item(menu, label, func):
 
 def loadConfig(configPath):
     config = dict()
-    rawConfig = ConfigParser.RawConfigParser()
-    rawConfig.read(configPath)
-    items = rawConfig.items('main')
+    try:
+        rawConfig = ConfigParser.RawConfigParser()
+        rawConfig.read(configPath)
+        items = rawConfig.items('main')
+    except ConfigParser.Error:
+        return config
     for item in items:
         config[item[0]] = item[1]
     return config
@@ -66,18 +70,34 @@ class TaskBarIcon(wx.TaskBarIcon):
         self.config = loadConfig(self.configPath)
         self.box = None
         self.isAppRunning = False
-        if not self.check_config():
+        isConfigOk = self.check_config()
+        saveConfig(self.configPath, self.config)
+        if not isConfigOk:
             self.on_settings(None)
         else:
             self.box = Box(self.config)
+            saveConfig(self.configPath, self.config)
             self.start_app()
 
     def check_config(self):
-        return bool(os.path.exists(self.config['path']))
+        result = True
+        if 'access_token' not in self.config or 'refresh_token' not in self.config:
+            self.config['access_token'] = ''
+            self.config['refresh_token'] = ''
+        if 'path' not in self.config or not os.path.exists(self.config['path']):
+            self.config['path'] = ''
+            result = False
+        if 'algorithm' not in self.config or not self.config['algorithm']:
+            self.config['algorithm'] = 'AES'
+        if 'private_key' not in self.config or not self.config['private_key']:
+            rsa = RSA()
+            self.config['private_key'] = rsa.private()
+        return result
 
     def start_app(self):
         if self.box is None:
             self.box = Box(self.config)
+            saveConfig(self.configPath, self.config)
         indexer = Indexer(self.config['path'], self.box)
         indexer.synchronize()
         self.eventList = EventList()
@@ -137,8 +157,6 @@ class Settings(wx.Frame):
         self.MakeModal(True)
         self.configPath = 'config.cfg'
         self.config = loadConfig(self.configPath)
-        if not os.path.exists(self.config['path']):
-            self.config['path'] = ''
         self.parent = parent
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)

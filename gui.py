@@ -132,7 +132,7 @@ class TaskBarIcon(wx.TaskBarIcon):
 class Settings(wx.Frame):
 
     def __init__(self, title, parent):
-        wx.Frame.__init__(self, None, title=title, size=(400,300),
+        wx.Frame.__init__(self, None, title=title, size=(400,320),
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^ wx.MAXIMIZE_BOX)
         self.MakeModal(True)
         self.configPath = 'config.cfg'
@@ -175,9 +175,14 @@ class Settings(wx.Frame):
         sbsizer.Add(self.algorithmCB,0,wx.ALL,0)
         sbsizer.Add(pathLabel,0,wx.ALL, 0)
         sbsizer.Add(self.path,0,wx.ALL,0)
+        hsizer = wx.BoxSizer(wx.VERTICAL)
+        applyButton = wx.Button(panel, wx.ID_CLOSE, "Apply")
+        applyButton.Bind(wx.EVT_BUTTON, self.OnClose)
+        hsizer.Add(applyButton, 0, wx.ALIGN_RIGHT, 0)
 
         box.Add(image,0,wx.ALL,0)
         box.Add(sbsizer,0,wx.EXPAND|wx.ALL,10)
+        box.Add(hsizer, 0, wx.EXPAND|wx.ALL,5)
 
         panel.SetSizer(box)
         panel.Layout()

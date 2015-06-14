@@ -70,8 +70,6 @@ class TaskBarIcon(wx.TaskBarIcon):
             self.on_settings(None)
         else:
             self.box = Box(self.config)
-            indexer = Indexer(self.config['path'], self.box)
-            indexer.synchronize()
             self.start_app()
 
     def check_config(self):
@@ -80,6 +78,8 @@ class TaskBarIcon(wx.TaskBarIcon):
     def start_app(self):
         if self.box is None:
             self.box = Box(self.config)
+        indexer = Indexer(self.config['path'], self.box)
+        indexer.synchronize()
         self.eventList = EventList()
         self.remoteObserver = startRemote(self.config['path'], self.box, self.eventList)
         self.localObserver = startLocal(self.config['path'], self.box, self.eventList)
@@ -137,6 +137,8 @@ class Settings(wx.Frame):
         self.MakeModal(True)
         self.configPath = 'config.cfg'
         self.config = loadConfig(self.configPath)
+        if not os.path.exists(self.config['path']):
+            self.config['path'] = ''
         self.parent = parent
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)

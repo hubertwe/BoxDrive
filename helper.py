@@ -1,7 +1,9 @@
 import hashlib
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.PublicKey import RSA as CryptoRSA
 import struct
 import os
+import io
 
 SOME_KEY = "0123456789ABCDEF"
 SOME_IV  = "0123456789ABCDEF"
@@ -29,6 +31,30 @@ def sha1(stream):
         return 0
     stream.seek(0)
     return hasher.hexdigest()
+
+
+class RSA:
+
+    def __init__(self, key=None, bits = 2048):
+        if key is None:
+            self.key = CryptoRSA.generate(bits)
+        else:
+            self.key = CryptoRSA.importKey(key.decode('hex'))
+
+    def private(self):
+        return self.key.exportKey('DER').encode('hex')
+
+    def public(self):
+        publicKey = self.key.publickey()
+        return publicKey.exportKey('DER').encode('hex')
+
+    def encrypt(self, message):
+        cipher = PKCS1_OAEP.new(self.key)
+        return cipher.encrypt(message).encode('hex')
+
+    def decrypt(self, message):
+        cipher = PKCS1_OAEP.new(self.key)
+        return cipher.decrypt(message.decode('hex'))
 
 
 def decrypt(inBuffer, filename, chunksize=64*1024):
@@ -60,3 +86,19 @@ def encrypt(filename, outbuffer, chunksize=64*1024):
                 chunk += ' ' * (16 - len(chunk) % 16)
             outbuffer.write(encryptor.encrypt(chunk))
     outbuffer.seek(0)
+
+if __name__ == '__main__':
+    key = RSA()
+    msg = SOME_KEY
+    print 'PRIV: '
+    priv = key.private()
+    print priv
+    print 'PUBLIC: '
+    print key.public()
+    print 'MSG: '
+    print msg
+    print 'ENCRYPT: '
+    encrypt = key.encrypt(msg)
+    print encrypt
+    print 'DECRYPT: '
+    print key.decrypt(encrypt)

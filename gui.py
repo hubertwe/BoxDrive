@@ -243,6 +243,9 @@ class Settings(wx.Frame):
         self.config['path'] = self.path.GetValue()
         self.config['algorithm'] = self.algorithmCB.GetStringSelection()
         self.config['encryption_key'] = self.key.GetValue()
+        if not self.config['path']:
+            self.error.SetLabel('*Please choose a directory first.')
+            return
         if len(self.config['encryption_key'] ) < 16:
             self.error.SetLabel('*Invalid key. Must be at least 16 characters.')
             return

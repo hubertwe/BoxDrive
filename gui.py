@@ -44,15 +44,15 @@ def saveConfig(configPath, config):
     rawConfig.write(fileHandler)
     fileHandler.close()
 
-def startRemote(path, box, eventList):
-    updater = local.Updater(path, box)
+def startRemote(path, key, box, eventList):
+    updater = local.Updater(path, key, box)
     handler = remote.Handler(updater, box, eventList)
     observer = remote.Observer(handler, box)
     observer.start()
     return observer
 
-def startLocal(path, box, eventList):
-    updater = remote.Updater(path, box)
+def startLocal(path, key, box, eventList):
+    updater = remote.Updater(path, key, box)
     handler = local.Handler(updater, eventList)
     observer = local.Observer(path, handler)
     observer.start()
@@ -92,17 +92,20 @@ class TaskBarIcon(wx.TaskBarIcon):
         if 'private_key' not in self.config or not self.config['private_key']:
             rsa = RSA()
             self.config['private_key'] = rsa.private()
+        if 'encryption_key' not in self.config or not self.config['encryption_key'] or len(self.config['encryption_key']) < 16:
+            self.config['encryption_key'] = ''
+            result = False
         return result
 
     def start_app(self):
         if self.box is None:
             self.box = Box(self.config)
             saveConfig(self.configPath, self.config)
-        indexer = Indexer(self.config['path'], self.box)
+        indexer = Indexer(self.config['path'], self.config['encryption_key'], self.box)
         indexer.synchronize()
         self.eventList = EventList()
-        self.remoteObserver = startRemote(self.config['path'], self.box, self.eventList)
-        self.localObserver = startLocal(self.config['path'], self.box, self.eventList)
+        self.remoteObserver = startRemote(self.config['path'], self.config['encryption_key'], self.box, self.eventList)
+        self.localObserver = startLocal(self.config['path'], self.config['encryption_key'], self.box, self.eventList)
         self.set_icon('img/icon_active.png')
         self.isAppRunning = True
 
@@ -152,7 +155,7 @@ class TaskBarIcon(wx.TaskBarIcon):
 class Settings(wx.Frame):
 
     def __init__(self, title, parent):
-        wx.Frame.__init__(self, None, title=title, size=(400,320),
+        wx.Frame.__init__(self, None, title=title, size=(400,400),
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^ wx.MAXIMIZE_BOX)
         self.MakeModal(True)
         self.configPath = 'config.cfg'
@@ -185,22 +188,38 @@ class Settings(wx.Frame):
         pathLabel = wx.StaticText(panel,-1,"Directory path:")
         self.path = wx.TextCtrl(panel, -1, size=(400, -1))
         self.path.WriteText(self.config['path'])
-        self.path.Bind(wx.EVT_LEFT_DOWN, self.OnPathClick);
+        self.path.Bind(wx.EVT_LEFT_DOWN, self.OnPathClick)
+
+        keyLabel = wx.StaticText(panel,-1,"Encryption key:")
+        self.key = wx.TextCtrl(panel, size=(400, -1), style=wx.TE_PASSWORD)
+        self.key.WriteText(self.config['encryption_key'])
+
+        self.error = wx.StaticText(panel, -1, '')
+        self.error.SetForegroundColour("red")
 
         sb = wx.StaticBox(panel, -1, "Options")
         sbsizer = wx.StaticBoxSizer(sb, wx.VERTICAL)
         sbsizer.Add(algorithmCBLabel,0,wx.ALL,0)
         sbsizer.Add(self.algorithmCB,0,wx.ALL,0)
+        sbsizer.AddSpacer(5)
         sbsizer.Add(pathLabel,0,wx.ALL, 0)
         sbsizer.Add(self.path,0,wx.ALL,0)
-        hsizer = wx.BoxSizer(wx.VERTICAL)
-        applyButton = wx.Button(panel, wx.ID_CLOSE, "Apply")
-        applyButton.Bind(wx.EVT_BUTTON, self.OnClose)
+        sbsizer.AddSpacer(5)
+        sbsizer.Add(keyLabel,10,wx.ALL, 0)
+        sbsizer.Add(self.key,0,wx.ALL,0)
+        sbsizer.AddSpacer(5)
+        sbsizer.Add(self.error,10,wx.ALL, 0)
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        applyButton = wx.Button(panel, wx.ID_CLOSE, "OK")
+        applyButton.Bind(wx.EVT_BUTTON, self.OnOk)
+        cancelButton = wx.Button(panel, wx.ID_CLOSE, "Cancel")
+        cancelButton.Bind(wx.EVT_BUTTON, self.OnClose)
         hsizer.Add(applyButton, 0, wx.ALIGN_RIGHT, 0)
+        hsizer.Add(cancelButton, 0, wx.ALIGN_RIGHT, 0)
 
         box.Add(image,0,wx.ALL,0)
         box.Add(sbsizer,0,wx.EXPAND|wx.ALL,10)
-        box.Add(hsizer, 0, wx.EXPAND|wx.ALL,5)
+        box.Add(hsizer, 10, wx.EXPAND|wx.ALIGN_RIGHT,5)
 
         panel.SetSizer(box)
         panel.Layout()
@@ -214,10 +233,19 @@ class Settings(wx.Frame):
             self.path.WriteText(dlg.GetPath())
 
     def OnClose(self, event):
-        print 'Will apply settings here..'
+        print 'On Cancel'
+        self.Hide()
+        self.Destroy()
+
+    def OnOk(self, event):
+        print 'On OK'
         oldConfig = dict(self.config)
         self.config['path'] = self.path.GetValue()
         self.config['algorithm'] = self.algorithmCB.GetStringSelection()
+        self.config['encryption_key'] = self.key.GetValue()
+        if len(self.config['encryption_key'] ) < 16:
+            self.error.SetLabel('*Invalid key. Must be at least 16 characters.')
+            return
         self.Hide()
         for key in self.config:
             if oldConfig[key] != self.config[key]:

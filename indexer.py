@@ -21,11 +21,12 @@ class FileIndex():
 
 class Indexer:
     
-    def __init__(self, path, box):
+    def __init__(self, path, key, box):
         self.box = box
+        self.key = key
         self.path = normalize(path)
-        self.localUpdater = LocalUpdater(path, box)
-        self.remoteUpdater = RemoteUpdater(path, box)
+        self.localUpdater = LocalUpdater(path, key, box)
+        self.remoteUpdater = RemoteUpdater(path, key, box)
         self.remoteFiles = list()
         self.localFiles = list()
         self.localDirs = list()
@@ -106,7 +107,7 @@ class Indexer:
                     self.localDirs.append(FileIndex(filename, normalize(root), '', True))
                 else:
                     output = io.BytesIO()
-                    encrypt(fullFilename, output)
+                    encrypt(fullFilename, output, self.key)
                     self.localFiles.append(FileIndex(filename, normalize(root), sha1(output)))
         print("Local indexing finished.")
 

@@ -112,35 +112,9 @@ class Box(boxsdk.Client):
                 continue
         return convertedEvents
 
-
-def testBox():
-    box = Box()
-    root_folder = box.folder(folder_id='0').get()
-
-    items = root_folder.get_items(limit=10, offset=0)
-    print('This is the first 10 items in the root folder:')
-    for item in items:
-        print item
-        print("   " + item.name + " : " + item.type)
-        itemsDeeper = item.get_items(limit=10)
-        for item2 in itemsDeeper:
-            print("       " + item2.name + " : " + item2.type)
-
-    # while True:
-    #    for event in box.getLastEvents():
-    #        print("Type: " + str(event.type))
-    #        print("Is directory: " + str(event.is_directory))
-    #        print("Sha1: " + str(event.sha1))
-    #        print("Path: " + str(event.path))
-    # time.sleep(5)
-
 if __name__ == '__main__':
-    #testBox()
-    box = Box()
-    root = box.getRoot()
-    file = box.getItem('box')
-    new = box.folder(folder_id = file.id).get()
-    'NEW'
-    print new.name
-    print new.id
-    print new.path_collection
+    box = Box(loadConfig('config.cfg'))
+    folder = box.getItem('box')
+    print folder.get().__dict__
+    folder = box.getItem('box/a')
+    print folder.get().__dict__

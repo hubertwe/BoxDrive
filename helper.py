@@ -57,9 +57,9 @@ class RSA:
         return cipher.decrypt(message.decode('hex'))
 
 
-def decrypt(inBuffer, filename, chunksize=64*1024):
+def decrypt(inBuffer, filename, key=SOME_KEY, chunksize=64*1024):
     inBuffer.seek(0)
-    decryptor = AES.new(SOME_KEY, AES.MODE_CBC, SOME_IV)
+    decryptor = AES.new(key[:16], AES.MODE_CBC, key[:16])
     try:
         origsize = struct.unpack('<Q', inBuffer.read(struct.calcsize('Q')))[0]
     except struct.error:
@@ -73,8 +73,8 @@ def decrypt(inBuffer, filename, chunksize=64*1024):
         outfile.truncate(origsize)
 
 
-def encrypt(filename, outbuffer, chunksize=64*1024):
-    encryptor = AES.new(SOME_KEY, AES.MODE_CBC, SOME_IV)
+def encrypt(filename, outbuffer, key=SOME_KEY, chunksize=64*1024):
+    encryptor = AES.new(key[:16], AES.MODE_CBC, key[:16])
     filesize = os.path.getsize(filename)
     outbuffer.write(struct.pack('<Q', filesize))
     with open(filename, 'rb') as infile:

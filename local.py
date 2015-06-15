@@ -90,8 +90,9 @@ class Handler(FileSystemEventHandler):
 
 class Updater:
 
-    def __init__(self, path, box):
+    def __init__(self, path, key, box):
         self.box = box
+        self.key = key
         self.path = normalize(path)
 
     def createFile(self, path):
@@ -110,7 +111,7 @@ class Updater:
             self.createDir(dirPath)
         output = io.BytesIO()
         file.download_to(output)
-        decrypt(output, absolutePath)
+        decrypt(output, absolutePath, self.key)
         print 'local/update | File creation succeeded: ' + absolutePath
 
     def createDir(self, path):
@@ -158,13 +159,13 @@ class Updater:
             return
         try:
             output = io.BytesIO()
-            encrypt(absolutePath, output)
+            encrypt(absolutePath, output, self.key)
             if file.sha1 == sha1(output):
                 print 'local/update | File already up to date: ' + absolutePath
                 return
             output = io.BytesIO()
             file.download_to(output)
-            decrypt(output, absolutePath)
+            decrypt(output, absolutePath, self.key)
             print 'local/update | File updating succeeded: ' + absolutePath
         except (IOError, OSError) as e:
             print e.errno

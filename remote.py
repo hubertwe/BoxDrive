@@ -79,9 +79,10 @@ class Handler():
 
 class Updater:
 
-    def __init__(self, path, box):
+    def __init__(self, path, key, box):
         self.path = normalize(path)
         self.box = box
+        self.key = key
 
     def createFile(self, path):
         relativePath = relative(self.path, path)
@@ -98,7 +99,7 @@ class Updater:
             dir = self.createDir(dirPath)
         try:
             output = io.BytesIO()
-            encrypt(path, output)
+            encrypt(path, output, self.key)
             dir.upload_stream(output, fileName)
         except (IOError,OSError):
             print 'remote/update | Cant find local file: ' + relativePath
@@ -145,7 +146,7 @@ class Updater:
             return
         try:
             output = io.BytesIO()
-            encrypt(path, output)
+            encrypt(path, output, self.key)
             if file.sha1 == sha1(output):
                 print 'remote/update | File already up to date: ' + relativePath
                 return
